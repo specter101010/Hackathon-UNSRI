@@ -1,0 +1,21 @@
+make: Entering directory '/workspace/scratch/53142cbe4f38/output/DualGuard'
+mkdir -p build
+iverilog -g2005 -Wall -s dg_csr_top -o build/compile rtl/dg_tile_ram.v rtl/dg_mac_lane.v rtl/dg_requant.v rtl/dg_tile_core.v rtl/dg_csr_top.v
+iverilog -g2012 -Wall -s tb_csr -o build/tb rtl/dg_tile_ram.v rtl/dg_mac_lane.v rtl/dg_requant.v rtl/dg_tile_core.v rtl/dg_csr_top.v tb/tb_csr.v
+cd build && vvp tb
+VCD info: dumpfile tile.vcd opened for output.
+PASS: 12 tiles, 48 dot products; reload, signed extremes, ReLU, saturation, backpressure, busy lock, CSR errors
+tb/tb_csr.v:102: $finish called at 104510000 (1ps)
+iverilog -g2005 -Wall -s tb_requant -o build/tb_q rtl/dg_requant.v tb/tb_requant.v
+cd build && vvp tb_q
+PASS: 10 requant boundary vectors
+tb/tb_requant.v:23: $finish called at 10000 (1ps)
+iverilog -g2005 -Wall -s tb_scaling -Ptb_scaling.N=8 -o build/tb_8 rtl/dg_tile_ram.v rtl/dg_mac_lane.v rtl/dg_requant.v rtl/dg_tile_core.v rtl/dg_csr_top.v tb/tb_scaling.v
+cd build && vvp tb_8
+PASS: 8 lanes elaborated and simulated
+tb/tb_scaling.v:39: $finish called at 250000 (1ps)
+iverilog -g2005 -Wall -s tb_scaling -Ptb_scaling.N=128 -o build/tb_128 rtl/dg_tile_ram.v rtl/dg_mac_lane.v rtl/dg_requant.v rtl/dg_tile_core.v rtl/dg_csr_top.v tb/tb_scaling.v
+cd build && vvp tb_128
+PASS: 128 lanes elaborated and simulated
+tb/tb_scaling.v:39: $finish called at 2650000 (1ps)
+make: Leaving directory '/workspace/scratch/53142cbe4f38/output/DualGuard'
