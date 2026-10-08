@@ -3,9 +3,13 @@
 Rancangan prototipe riset untuk deteksi serangan presentasi (PAD) wajah dan dokumen. Disusun berdasarkan DualGuard_Analisis_v3.pdf serta tiga diagram referensi,Oktober 2026. Bukan pembuktian keaslian kriptografis paspor atau pencocokan identitas. 
 
 UNSRI TEAM
+
 KETUA     : MOCHAMMAD RANDY SURYA BACHRI.
+
 ANGGOTA 1 : SACHIO AJI.
+
 ANGGOTA 2 : YASYIR MASY'AL.
+
 ANGGOTA 3 : ZINNIARETHIE ANDARI KOSTIENE.
 
 ## Paket
