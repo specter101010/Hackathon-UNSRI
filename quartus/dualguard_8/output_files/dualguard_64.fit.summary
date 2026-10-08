@@ -1,0 +1,20 @@
+Fitter Status : Successful - Thu Oct  8 13:25:40 2026
+Quartus Prime Version : 25.1std.0 Build 1129 10/21/2025 SC Lite Edition
+Revision Name : dualguard_64
+Top-level Entity Name : dg_top_64
+Family : Cyclone V
+Device : 5CSEBA6U23I7
+Timing Models : Final
+Logic utilization (in ALMs) : 3,954 / 41,910 ( 9 % )
+Total registers : 6669
+Total pins : 82 / 314 ( 26 % )
+Total virtual pins : 0
+Total block memory bits : 133,120 / 5,662,720 ( 2 % )
+Total RAM Blocks : 65 / 553 ( 12 % )
+Total DSP Blocks : 67 / 112 ( 60 % )
+Total HSSI RX PCSs : 0
+Total HSSI PMA RX Deserializers : 0
+Total HSSI TX PCSs : 0
+Total HSSI PMA TX Serializers : 0
+Total PLLs : 0 / 6 ( 0 % )
+Total DLLs : 0 / 4 ( 0 % )

@@ -12,7 +12,7 @@ Rancangan prototipe riset mahasiswa untuk deteksi serangan presentasi (PAD) waja
 - `Makefile`: kompilasi dan simulasi dengan Icarus Verilog.
 
 ## 3.1 Solusi dan Arsitektur Sistem
-DualGuard mengimplementasikan satu mesin komputasi CNN INT8 yang digunakan bergantian untuk pemeriksaan wajah dan dokumen. ARM Cortex-A9 pada HPS mengelola akuisisi kamera, deteksi ROI, crop, resize atau patch, pemeriksaan kualitas, kuantisasi, penjadwalan layer/tile, serta agregasi skor antar-frame. Bobot model wajah dan dokumen berada di DDR3 HPS. Bobot tile terpilih disalin ke bank memori FPGA melalui jembatan HPS-FPGA. Penggantian model dilakukan dengan memuat bobot dan parameter baru setelah semua keluaran pekerjaan sebelumnya selesai dikonsumsi; bitstream datapath tetap.
+DualGuard mengimplementasikan satu mesin komputasi CNN INT8 yang digunakan bergantian untuk MiniFASNetV2 pada pemeriksaan face anti-spoofing dan MobileNetV2 pada pemeriksaan dokumen. ARM Cortex-A9 pada HPS mengelola akuisisi kamera, deteksi ROI, crop, resize atau patch, pemeriksaan kualitas, kuantisasi, penjadwalan layer/tile, serta agregasi skor antar-frame. Bobot kedua model berada di DDR3 HPS. Bobot tile terpilih disalin ke bank memori FPGA melalui jembatan HPS-FPGA. Penggantian model dilakukan dengan memuat bobot dan parameter baru setelah semua keluaran pekerjaan sebelumnya selesai dikonsumsi; bitstream datapath tetap.
 
 Di FPGA, aktivasi INT8 dibaca dari buffer sinkron lalu disiarkan ke jalur MAC. Setiap jalur memiliki bank bobot sendiri, pengali signed 8x8 dan akumulator signed INT32. Mesin melakukan dot product untuk beberapa kanal keluaran dari satu posisi spasial. Requantizer bersama mengubah hasil INT32 menjadi INT8 secara berurutan. Hasil menyertakan nomor jalur dan identitas mode untuk mencegah pertukaran hasil antarmodel. ARM mengolah keluaran layer menjadi logits/skor melalui head model dan operator yang belum didukung; hasil tile bukan otomatis skor PAD.
 
@@ -34,7 +34,7 @@ Jika ReLU aktif, nilai negatif dijepit ke 0 sebelum saturasi INT8. Kuantisasi ba
 
 Bias harus berada dalam rentang -2^30..2^30-1 untuk DEPTH=256; setiap penjumlahan akhir harus muat INT32. Tidak ada deteksi overflow runtime. Untuk bobot/aktivasi signed INT8, batas absolut konservatif dot product tanpa bias adalah K*16384 (4,194,304 untuk K=256). RAM tidak direset: host wajib mengisi semua alamat aktif sebelum START dan tidak membaca hasil sebelum VALID.
 
-LANES default 8, DEPTH default 256. Parameter statis: 1<=LANES<=128 dan 1<=DEPTH<=256 pada rancangan ini. Target 128 jalur dalam proposal memerlukan synthesis/fitter terpisah. Pada kode ini, throughput rata-rata fase hitung tidak mencapai 128 MAC/cycle; FETCH dan MAC bergantian, sehingga fase hitung mengeluarkan LANES MAC per 2 clock.
+Konfigurasi implementasi final memakai LANES=64 dan DEPTH=256. Fitter Cyclone V 5CSEBA6U23I7 berhasil dengan 3.954 ALM, 6.669 register, 65 RAM block dan 67 dari 112 DSP. Konfigurasi 128 lane gagal ditempatkan karena kebutuhan DSP melebihi kapasitas perangkat. FETCH dan MAC bergantian, sehingga fase hitung mengeluarkan LANES MAC per 2 clock.
 
 ## Pemetaan konvolusi
 ARM membentuk `a[k]` dari jendela input untuk satu (y,x), dengan k=((ky*Kw+kx)*Cin+ci), termasuk padding nol. Untuk output channel j, `w[j][k]` memakai urutan yang sama. Setiap lane menghasilkan satu kanal output pada posisi itu. Pointwise 1x1 berarti K=Cin. Jika Cout>LANES, ulangi per kelompok kanal; lane yang tidak terpakai diisi bobot/bias nol dan hasilnya diabaikan. Bobot dapat dipakai ulang untuk posisi spasial berikutnya, hanya aktivasi diganti.
@@ -89,16 +89,16 @@ CSR harus didaftarkan sebagai agent Avalon-MM sederhana nonburst, addressUnits=S
 9. Saat mode berganti, tunggu selesai, clear status dan reload seluruh bobot/parameter tile model baru. Satu bit CONFIG tidak mengganti model sendiri.
 
 ## Anggaran dan waktu
-Payload RAM = DEPTH*(LANES+1) byte. Pada 8x256, payload 2304 byte; 128x256, payload 33024 byte. Alokasi fisik berbeda: bank kecil dapat menghabiskan satu blok M10K per bank (misalnya 129 blok untuk 128 lane + 1 aktivasi), sehingga persentase memori harus berasal dari fitter, bukan ukuran payload.
+Payload RAM = DEPTH*(LANES+1) byte. Pada konfigurasi 64x256, payload logis berjumlah 16.640 byte. Alokasi fisik hasil Fitter menggunakan 133.120 block-memory bits dan 65 RAM block, karena setiap bank kecil dapat menghabiskan satu blok fisik.
 
-Dengan konsumsi satu output setiap clock, latensi dari START diterima sampai POP terakhir adalah 2*K+1+LANES clock (tidak termasuk pemuatan PIO dan delay host). Untuk K=256, LANES=8: 521 clock; pada clock **asumsi** 100 MHz setara 5.21 us, bukan waktu inferensi model. Peak fase MAC rata-rata LANES*fclk/2; LANES=128 dan fclk=100 MHz memberi 6.4 GMAC/s sebelum transfer/output/idle. Perkiraan 5.12 GMAC/s pada proposal memakai asumsi datapath berbeda; jangan salin sebagai hasil RTL ini. Target 100 MHz belum diverifikasi. Multiplier requantization 32x32 dan variable shift dapat menjadi bottleneck timing; pipeline diperlukan jika timing gagal.
+Dengan konsumsi satu output setiap clock, latensi dari START diterima sampai POP terakhir adalah 2*K+1+LANES clock (tidak termasuk pemuatan PIO dan delay host). Untuk K=256 dan LANES=64: 577 clock; pada clock **asumsi** 100 MHz setara 5,77 us, bukan waktu inferensi model. Peak fase MAC rata-rata LANES*fclk/2; LANES=64 pada 100 MHz memberi 3,2 GMAC/s sebelum transfer/output/idle. Target 100 MHz tetap harus dikonfirmasi melalui TimeQuest.
 
 Pemakaian DSP tidak dapat diasumsikan tepat tiga pengali per blok dari operator `*` Verilog. DSP packing tergantung fitter, lebar dan struktur datapath. Hitung DSP untuk MAC, requantizer dan kontrol dari report Quartus. DMA, double buffering dan burst transfer baru boleh diberi angka setelah integrasi.
 
 ## Verifikasi
 Jalankan `make test`. Testbench CSR mengecek 12 tile dengan bobot di-reload, 48 dot product terhadap perhitungan independen, K=1 dan K=256, bilangan signed ekstrem, ReLU, saturasi, output yang ditahan tanpa POP, tag mode/lane, larangan perubahan konfigurasi saat busy, serta error panjang, shift, multiplier dan byteenable. Testbench requantization mengecek 10 vektor batas termasuk tie negatif dan produk INT64. Testbench CSR memakai 4 lane untuk mempercepat simulasi; top default 8 lane juga dikompilasi. Konfigurasi 8 dan 128 lane telah dielaborasi dan disimulasikan dengan satu dot product signed ekstrem pada setiap lane; kedua uji lulus. Ini tidak membuktikan kelayakan resource atau timing 128 lane. Ini pengujian fungsional, bukan coverage lengkap atau pembuktian formal.
 
-Uji board berikutnya: elaborasi LANES=8/64/128; report DSP/ALM/register/M10K; Fmax/timing; uji golden tensor tiap layer; port DDR3; timeout/reset; latensi total kamera+ARM+transfer+FPGA+fusi; biaya switching; APCER/BPCER/ACER pada split per subjek/dokumen; quantization loss dibanding FP32. Jangan mengklaim model lengkap/keamanan/efisiensi sebelum pengukuran.
+Hasil eksplorasi resource: 8 lane berhasil, 64 lane berhasil dan dipilih sebagai konfigurasi final, sedangkan 128 lane gagal Fitter karena DSP tidak mencukupi. Uji berikutnya: Fmax/timing 100 MHz; golden tensor tiap layer; port DDR3; timeout/reset; latensi total kamera+ARM+transfer+FPGA+fusi; APCER/BPCER/ACER; dan quantization loss dibanding FP32.
 
 ## Referensi
 [1] Dokumen internal tim: DualGuard_Analisis_v3.pdf dan diagram model/sistem/accelerator yang dilampirkan.

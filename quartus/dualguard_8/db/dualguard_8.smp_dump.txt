@@ -1,0 +1,8 @@
+
+State Machine - |dg_top_64|dg_csr_top:u_dualguard|dg_tile_core:core|state
+Name state.FINISH state.MAC state.FETCH state.IDLE state.EMIT 
+state.IDLE 0 0 0 0 0 
+state.FETCH 0 0 1 1 0 
+state.MAC 0 1 0 1 0 
+state.FINISH 1 0 0 1 0 
+state.EMIT 0 0 0 1 1 
