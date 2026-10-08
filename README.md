@@ -1,12 +1,12 @@
 # QUANTPASS DualGuard - Diagram Blok Sistem dan Rincian Modul RTL
 
-Rancangan prototipe riset untuk deteksi serangan presentasi (PAD) wajah dan dokumen. Disusun berdasarkan DualGuard_Analisis_v3.pdf serta tiga diagram referensi, 7 Oktober 2026. Bukan pembuktian keaslian kriptografis paspor atau pencocokan identitas. 
+Rancangan prototipe riset untuk deteksi serangan presentasi (PAD) wajah dan dokumen. Disusun berdasarkan DualGuard_Analisis_v3.pdf serta tiga diagram referensi,Oktober 2026. Bukan pembuktian keaslian kriptografis paspor atau pencocokan identitas. 
 
 UNSRI TEAM
-KETUA     : MOCHAMMAD RANDY SURYA BACHRI
-ANGGOTA 1 : SACHIO AJI
-ANGGOTA 2 : YASYIR MASY'AL
-ANGGOTA 3 : ZINNIARETHIE ANDARI KOSTIENE
+KETUA     : MOCHAMMAD RANDY SURYA BACHRI.
+ANGGOTA 1 : SACHIO AJI.
+ANGGOTA 2 : YASYIR MASY'AL.
+ANGGOTA 3 : ZINNIARETHIE ANDARI KOSTIENE.
 
 ## Paket
 - `figures/Diagram_Blok_Sistem.png`: pembagian kamera, ARM HPS, DDR3, FPGA, keputusan.
